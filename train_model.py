@@ -58,9 +58,7 @@ SEED       = 42
 
 # Classes must match folder names exactly (order fixes label indices)
 CLASS_NAMES = [
-    "Both Lane Congestion",
     "Left Lane Congestion",
-    "No Lane Congestion",
     "Right Lane Congestion",
 ]
 

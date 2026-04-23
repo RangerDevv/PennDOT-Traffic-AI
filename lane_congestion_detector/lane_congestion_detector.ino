@@ -2,11 +2,9 @@
  * PennDOT Lane Congestion Detector  –  Live Dashboard
  * ESP32-S3-EYE  –  Arduino Sketch
  *
- * Classifies four road states captured by the on-board OV2640 camera:
- *   0 – Both Lane Congestion
- *   1 – Left Lane Congestion
- *   2 – No Lane Congestion
- *   3 – Right Lane Congestion
+ * Classifies two road states captured by the on-board OV2640 camera:
+ *   0 – Left Lane Congestion
+ *   1 – Right Lane Congestion
  *
  * Features:
  *   - Live MJPEG camera stream at /stream
@@ -78,7 +76,7 @@ static size_t   g_rgb_buf_size = 0;
 // Latest inference result (shared with web server)
 static volatile int   g_best_class = -1;
 static volatile float g_best_score = 0.0f;
-static volatile float g_scores[4]  = {0, 0, 0, 0};
+static volatile float g_scores[2]  = {0, 0};
 static volatile unsigned long g_last_inference_ms = 0;
 
 // HTTP server handle
@@ -379,23 +377,13 @@ function updateLights(cls, conf) {
     document.getElementById('right-yellow').classList.add('on');
     return;
   }
-  switch(cls) {
-    case 0: // Both congested
-      document.getElementById('left-red').classList.add('on');
-      document.getElementById('right-red').classList.add('on');
-      break;
-    case 1: // Left congested – open left to drain the queue
-      document.getElementById('left-green').classList.add('on');
-      document.getElementById('right-red').classList.add('on');
-      break;
-    case 2: // No congestion
-      document.getElementById('left-green').classList.add('on');
-      document.getElementById('right-green').classList.add('on');
-      break;
-    case 3: // Right congested – open right to drain the queue
-      document.getElementById('left-red').classList.add('on');
-      document.getElementById('right-green').classList.add('on');
-      break;
+  // 2-class logic: 0 = Left Lane Congestion, 1 = Right Lane Congestion
+  if (cls === 0) {
+    document.getElementById('left-green').classList.add('on');
+    document.getElementById('right-red').classList.add('on');
+  } else if (cls === 1) {
+    document.getElementById('left-red').classList.add('on');
+    document.getElementById('right-green').classList.add('on');
   }
 }
 
@@ -407,8 +395,7 @@ function updateResult(cls, conf, names) {
     el.classList.add('unknown');
   } else {
     el.textContent = names[cls] + ' (' + (conf*100).toFixed(1) + '%)';
-    if (cls === 2) el.classList.add('clear');
-    else if (cls === 0) el.classList.add('congested');
+    if (cls === 0) el.classList.add('congested');
     else el.classList.add('partial');
   }
 }
@@ -461,17 +448,15 @@ static esp_err_t handler_inference(httpd_req_t* req) {
     int cls = (int)g_best_class;
     if (cls < 0 || cls >= kNumClasses) cls = -1;
     snprintf(json, sizeof(json),
-        "{\"class\":%d,\"confidence\":%.4f,"
-        "\"scores\":[%.4f,%.4f,%.4f,%.4f],"
-        "\"names\":[\"%s\",\"%s\",\"%s\",\"%s\"],"
-        "\"uptime\":%lu,\"ready\":%s}",
-        cls, (float)g_best_score,
-        (float)g_scores[0], (float)g_scores[1],
-        (float)g_scores[2], (float)g_scores[3],
-        kClassNames[0], kClassNames[1],
-        kClassNames[2], kClassNames[3],
-        millis() / 1000,
-        cls >= 0 ? "true" : "false");
+      "{\"class\":%d,\"confidence\":%.4f,"
+      "\"scores\":[%.4f,%.4f],"
+      "\"names\":[\"%s\",\"%s\"],"
+      "\"uptime\":%lu,\"ready\":%s}",
+      cls, (float)g_best_score,
+      (float)g_scores[0], (float)g_scores[1],
+      kClassNames[0], kClassNames[1],
+      millis() / 1000,
+      cls >= 0 ? "true" : "false");
     httpd_resp_set_type(req, "application/json");
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     httpd_resp_send(req, json, strlen(json));
