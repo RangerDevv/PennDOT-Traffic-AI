@@ -170,20 +170,28 @@ static bool init_tflite() {
 // ── WiFi initialisation ───────────────────────────────────────────────────────
 static void init_wifi() {
     WiFi.disconnect(true);        // clear any stale connection state
-    WiFi.mode(WIFI_STA);          // explicit STA mode (clears leftover AP from NVS)
+    // Enable both Station and Access Point mode
+    WiFi.mode(WIFI_AP_STA);
+    // Start AP with custom SSID and password
+    const char* AP_SSID = "PennDOT-Traffic-AI";
+    const char* AP_PASS = "congestion";
+    WiFi.softAP(AP_SSID, AP_PASS);
+    Serial.printf("[WiFi] AP started!  SSID: %s  PASS: %s  IP: %s\n", AP_SSID, AP_PASS, WiFi.softAPIP().toString().c_str());
+
+    // Connect to existing WiFi as STA
     WiFi.begin(WIFI_SSID, WIFI_PASS);
     Serial.print("[WiFi] Connecting");
     int attempts = 0;
     while (WiFi.status() != WL_CONNECTED && attempts < 40) {
-        delay(500);
-        Serial.print(".");
-        attempts++;
+      delay(500);
+      Serial.print(".");
+      attempts++;
     }
     if (WiFi.status() == WL_CONNECTED) {
-        WiFi.setAutoReconnect(true);
-        Serial.printf("\n[WiFi] Connected!  IP: %s\n", WiFi.localIP().toString().c_str());
+      WiFi.setAutoReconnect(true);
+      Serial.printf("\n[WiFi] Connected!  IP: %s\n", WiFi.localIP().toString().c_str());
     } else {
-        Serial.println("\n[WiFi] Connection failed – check SSID/password and restart.");
+      Serial.println("\n[WiFi] Connection failed – check SSID/password and restart.");
     }
 }
 
