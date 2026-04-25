@@ -36,8 +36,8 @@
 
 // ── WiFi credentials ──────────────────────────────────────────────────────────
 // CHANGE THESE to your network
-const char* WIFI_SSID = "Fios-7WLn5";
-const char* WIFI_PASS = "vial35epic63hue";
+const char* WIFI_SSID = "Tejas' iPhone";
+const char* WIFI_PASS = "12345678";
 
 // ── ESP32-S3-EYE camera pin map ───────────────────────────────────────────────
 #define CAM_PIN_PWDN    -1
